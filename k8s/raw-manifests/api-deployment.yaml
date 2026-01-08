@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: platform-api
+  labels:
+    app: platform-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: platform-api
+  template:
+    metadata:
+      labels:
+        app: platform-api
+    spec:
+      containers:
+        - name: api
+          image: platform-api:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: APP_ENV
+              value: "production"
+            - name: SERVICE_NAME
+              value: "platform-api"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10  #wait 10 seconds before first check
+            periodSeconds: 10 #check every 10 seconds
+          readinessProbe: #check if the app is ready to serve traffic
+            httpGet: #use HTTP GET request to the /health endpoint
+              path: /health 
+              port: 8000 #port to access
+            initialDelaySeconds: 5 #wait 5 seconds before first check
+            periodSeconds: 5 #check every 5 seconds
+      
