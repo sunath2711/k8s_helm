@@ -16,13 +16,15 @@ spec:
     spec:
       containers:
         - name: api
-          image: platform-api:1.0
+          image: platform-api:2.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
           envFrom:
             - configMapRef:
                 name: platform-api-config
+            - secretRef:
+                name: postgres-secret
           resources:
             requests:
               cpu: "100m"
