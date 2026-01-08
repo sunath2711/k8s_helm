@@ -20,11 +20,9 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
-          env:
-            - name: APP_ENV
-              value: "production"
-            - name: SERVICE_NAME
-              value: "platform-api"
+          envFrom:
+            - configMapRef:
+                name: platform-api-config
           resources:
             requests:
               cpu: "100m"

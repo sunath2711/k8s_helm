@@ -1,5 +1,6 @@
 # ---------- Build stage ----------
-FROM python:3.11-slim AS builder
+FROM python:3.11-slim AS builder 
+#python:3.11-slim = Debian (slim) + Python 3.11 + pip + minimal system libs
 
 ARG APP_HOME=/app
 
