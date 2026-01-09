@@ -32,6 +32,11 @@ def db_check():
         password=os.getenv("POSTGRES_PASSWORD"),
         host=os.getenv("DB_HOST"),
         port=os.getenv("DB_PORT"),
+        connect_timeout=3
     )
+    cur = conn.cursor()
+    cur.execute("SELECT 1;")
+    cur.fetchone()
     conn.close()
     return {"db": "connected"}
+    

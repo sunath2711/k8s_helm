@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: postgres-migration
+  namespace: platform
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: platform-api:2.0
+          command:
+            - sh
+            - -c
+            - |
+              python - <<EOF
+              import psycopg2, os
+
+              print"Starting migration..."
+
+              conn = psycopg2.connect(
+                  dbname=os.environ["POSTGRES_DB"],
+                  user=os.environ["POSTGRES_USER"],
+                  password=os.environ["POSTGRES_PASSWORD"],
+                  host="postgres",
+                  port=5432
+              )
+
+              cur = conn.cursor()
+              cur.execute("""
+                CREATE TABLE IF NOT EXISTS health_checks (
+                  id SERIAL PRIMARY KEY,
+                  checked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+              """)
+              conn.commit()
+              conn.close()
+              print("Migration completed")
+              EOF
+          envFrom:
+            - secretRef:
+                name: postgres-secret

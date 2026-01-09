@@ -14,6 +14,21 @@ spec:
       labels:
         app: platform-api
     spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h postgres -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do
+                echo "Waiting for Postgres to be ready..."
+                sleep 2
+              done
+              echo "Postgres is ready!"
+          envFrom:
+            - secretRef:
+                name: postgres-secret
       containers:
         - name: api
           image: platform-api:2.0
@@ -32,6 +47,13 @@ spec:
             limits:
               cpu: "500m"
               memory: "256Mi"
+          startupProbe: #check if the app has started
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10 #wait 10 seconds before first check
+            failureThreshold: 30 #number of failed checks before marking as failed
+            periodSeconds: 5 #check every 5 seconds
           livenessProbe:
             httpGet:
               path: /health
@@ -40,8 +62,9 @@ spec:
             periodSeconds: 10 #check every 10 seconds
           readinessProbe: #check if the app is ready to serve traffic
             httpGet: #use HTTP GET request to the /health endpoint
-              path: /health 
+              path: /db-check
               port: 8000 #port to access
             initialDelaySeconds: 5 #wait 5 seconds before first check
             periodSeconds: 5 #check every 5 seconds
+        
       
