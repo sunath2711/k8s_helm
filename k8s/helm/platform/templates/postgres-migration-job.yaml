@@ -1,0 +1,62 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.migration.name }}
+  annotations:
+    "helm.sh/hook": post-install, post-upgrade
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migration.backoffLimit }}
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-postgres
+          image: {{ .Values.postgres.image }}
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h {{ .Values.postgres.name }} -p 5432 -U $POSTGRES_USER -d $POSTGRES_DB; do
+                echo "Waiting for Postgres to be ready..."
+                sleep 2
+              done
+          envFrom:
+            - secretRef:
+                name: {{ .Values.postgres.name }}-secret
+      containers:
+        - name: migrate
+          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
+          command:
+            - sh
+            - -c
+            - |
+              python3 - <<'EOF'
+              import psycopg2, os
+              try:
+                  conn = psycopg2.connect(
+                      dbname=os.environ["POSTGRES_DB"],
+                      user=os.environ["POSTGRES_USER"],
+                      password=os.environ["POSTGRES_PASSWORD"],
+                      host="{{ .Values.postgres.name }}",
+                      port=5432
+                  )
+                  cur = conn.cursor()
+                  cur.execute("""
+                    CREATE TABLE IF NOT EXISTS health_checks (
+                      id SERIAL PRIMARY KEY,
+                      checked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                  """)
+                  conn.commit()
+                  cur.close()
+                  conn.close()
+                  print("Migration completed successfully")
+              except Exception as e:
+                  print(f"Migration failed: {e}")
+                  exit(1)
+              EOF
+          envFrom:
+            - secretRef:
+                name: {{ .Values.postgres.name }}-secret
+          ttlSecondsAfterFinished: 300

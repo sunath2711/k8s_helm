@@ -1,0 +1,41 @@
+# Global Config
+env: staging
+
+api:
+  name: platform-api
+  replicas: 2
+  image:
+    repository: platform-api
+    tag: "2.0"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  probes:
+    startup:
+      initialDelaySeconds: 10
+      failureThreshold: 30
+      periodSeconds: 5
+    liveness:
+      initialDelaySeconds: 10
+      periodSeconds: 10
+    readiness:
+      initialDelaySeconds: 5
+      periodSeconds: 5
+
+postgres:
+  name: postgres
+  image: postgres:16
+  storage: 5Gi
+  # Credentials (Template will base64 encode these)
+  user: platform
+  password: platform
+  db: platform
+
+migration:
+  name: postgres-migration
+  backoffLimit: 3

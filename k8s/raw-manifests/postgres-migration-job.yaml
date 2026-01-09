@@ -18,8 +18,6 @@ spec:
               python - <<EOF
               import psycopg2, os
 
-              print"Starting migration..."
-
               conn = psycopg2.connect(
                   dbname=os.environ["POSTGRES_DB"],
                   user=os.environ["POSTGRES_USER"],
